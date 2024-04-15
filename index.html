@@ -51,10 +51,17 @@
   height: .7rem;
 }
 
-.skill-mf .progress .progress-bar {
+/* .skill-mf .progress{
   height: .7rem;
   background-color: #ffbd39;
-}
+} */
+
+.progress-bar {
+            background-color: #ffbd39;
+			height: .7rem;
+            width: 0;
+            transition: width 5s ease;
+            }
 
 
 /* Animation styles */
@@ -227,36 +234,89 @@
 									  </div>
 									</div>
 								  </div>
-
-								<div class="skill-mf">
+								  
+								<div class="skill-mf" id="skill-mf">
 									<p class="title-s">Skills</p>
 									<span>Networking</span> <span class="pull-right">90%</span>
 									<div class="progress">
-										<div class="progress-bar" role="progressbar" style="width: 95%;" aria-valuenow="95" aria-valuemin="0"
+										<div class="progress-bar" id="Networking" role="progressbar" aria-valuenow="85" aria-valuemin="0"
 											aria-valuemax="100"></div>
 									</div>
-									
+									<script>
+										var progressBar = document.getElementById("Networking");
+
+										// progressBar.addEventListener("click", updateProgress);
+									// 	const callback = (entries, observer) => {
+									// 	console.log(entries, observer)
+									// 	entries.forEach(entry => {
+									// 		console.log(entry.isIntersecting && entry.intersectionRatio==1)
+									// 		if (entry.isIntersecting && entry.intersectionRatio==1) {
+									// 			// If the observed element is in view, execute your desired function here
+									// 			console.log('Observed element is in view!');
+									// 			// Call your function here
+									// 			updateProgress();
+									// 			functionTriggered = true;
+
+									// 			// Unobserve the target element to stop observing once it's in view (optional)
+									// 			observer.unobserve(entry.target);
+									// 		}
+									// 	});
+									// };
+								
+									// const observer = new IntersectionObserver(callback);
+								
+									// // Select the target element to be observed
+									// // const target = document.querySelector('.observed');
+								
+									// // Start observing the target element
+									// if (progressBar) {
+									// 	observer.observe(progressBar);
+									// }
+									window.addEventListener("scroll", () => {
+										const rect = progressBar.getBoundingClientRect();
+										const isInViewport = (rect.top >= 0 && rect.bottom <= window.innerHeight);
+										if (isInViewport) {
+											// Your function to be called when the element is visible
+											updateProgress();
+											// Optionally, remove the event listener to avoid redundancy
+											window.removeEventListener("scroll", this);
+										}
+									});
+										function updateProgress() {        
+										var Networking = document.getElementById("Networking");
+										var CloudOps = document.getElementById("CloudOps");
+										var Visualization = document.getElementById("Visualization");
+										var DevSecOps = document.getElementById("DevSecOps");
+										var Machine = document.getElementById("Machine");
+
+										Networking.style.width = 90 + "%";
+										CloudOps.style.width = 85 + "%";
+										Visualization.style.width = 90 + "%";
+										DevSecOps.style.width = 90 + "%";
+										Machine.style.width = 80 + "%";
+										}
+									</script>
 									<span>CloudOps</span> <span class="pull-right">85%</span>
 									<div class="progress">
-										<div class="progress-bar" role="progressbar" style="width: 85%" aria-valuenow="85" aria-valuemin="0"
+										<div class="progress-bar" id="CloudOps" role="progressbar" aria-valuenow="85" aria-valuemin="0"
 											aria-valuemax="100"></div>
 									</div>
 									
 									<span>Visualization</span> <span class="pull-right">90%</span>
 									<div class="progress">
-										<div class="progress-bar" role="progressbar" style="width: 90%" aria-valuenow="90" aria-valuemin="0"
+										<div class="progress-bar" role="progressbar" id="Visualization" aria-valuenow="90" aria-valuemin="0"
 											aria-valuemax="100"></div>
 									</div>
 									
 									<span>DevSecOps</span> <span class="pull-right">90%</span>
 									<div class="progress">
-										<div class="progress-bar" role="progressbar" style="width: 85%" aria-valuenow="85" aria-valuemin="0"
+										<div class="progress-bar" role="progressbar" id="DevSecOps" aria-valuenow="85" aria-valuemin="0"
 											aria-valuemax="100"></div>
 									</div>
 									
 									<span>Machine Learning</span> <span class="pull-right">80%</span>
 									<div class="progress">
-										<div class="progress-bar" role="progressbar" style="width: 80%" aria-valuenow="80" aria-valuemin="0"
+										<div class="progress-bar" role="progressbar" id="Machine" aria-valuenow="80" aria-valuemin="0"
 											aria-valuemax="100"></div>
 									</div>
 								</div>
@@ -273,12 +333,12 @@
 								
 								<p>I am a DevOps/Cloud Engineer who likes to work on Cloud Infrastructure & Automation, CI/CD, Systems Administration and Monitoring/Observability. I am an Open Source enthusiast and like to contribute back to community whenever possible.</p>
 								<ul class="about-info mt-4 px-md-0 px-2">
-									<li class="d-flex"><span>Profile:</span> <span>DevOps &amp; Engineer</span></li>
-									<li class="d-flex"><span>Domain:</span> <span>Open Source Techonogies  &amp; Clouds & DevOps</span></li>
+									<li class="d-flex"><span>Profile:</span> <span>DevOps & Engineer</span></li>
+									<li class="d-flex"><span>Domain:</span> <span>Open Source Techonogies  & Clouds & DevOps</span></li>
 									<li class="d-flex"><span>Education:</span> <span>Bachelor of Engineering</span></li>
 									<li class="d-flex"><span>Language:</span> <span>English, Hindi</span></li>
-									<li class="d-flex"><span>DevSecOps Tools:</span> <span>Linux, CloudOps &amp; DevSecOps </span></li>
-									<li class="d-flex"><span>Other Skills:</span> <span>Cloud, Excel, Git, JIRA, Google Analytics &amp; SEO</span></li>
+									<li class="d-flex"><span>DevSecOps Tools:</span> <span>Linux, CloudOps & DevSecOps </span></li>
+									<li class="d-flex"><span>Other Skills:</span> <span>Cloud, Excel, Git, JIRA, Google Analytics & SEO</span></li>
 									<li class="d-flex"><span>Interest:</span> <span> Open Source Technologies, Travel Photography, Teaching</span></li>
 									
 								</ul>
@@ -458,7 +518,7 @@
 				<div class="text mt-3 float-right d-block">
   
 				  <h3 class="heading"><a href="https://github.com/rishabhnmishra/customer_segmentation/blob/main/Customer_Segmentation-final.ipynb">Customer Segmentation using clustering model</a></h3>
-				  <p>Developed a ML model to give various recommendations of financial products &amp; services on target customer groups.</p>
+				  <p>Developed a ML model to give various recommendations of financial products & services on target customer groups.</p>
 				</div>
 			  </div>
 			</div>
@@ -509,7 +569,7 @@
 				<div class="row justify-content-center">
 					<div class="col-md-7 ftco-animate text-center">
 						<h2>More projects on<span> Github  </span> </h2>
-						<div class="heading"> <h4> I love to solve business problems &amp; uncover hidden data stories </h4>
+						<div class="heading"> <h4> I love to solve business problems & uncover hidden data stories </h4>
 						<br>
 						<p><a href="https://github.com/amanpatelitofficial" class="btn btn-primary py-3 px-5">GitHub</a></p>
 						</div>
