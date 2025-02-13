@@ -1,13 +1,4 @@
-##  🚀 Let’s Code & Deploy!
+![image](https://github.com/user-attachments/assets/3f364521-2f33-422a-9a33-72dc6f3cd41b)
 
-🔗 Let’s connect on https://amanops.com and grow together!
-
-🔗 Let’s connect on https://github.com/amanpatelitofficial/ and grow together!
-
-🔗 Let’s connect on https://blog.amanops.com/ and grow together!
-
-![image](https://github.com/user-attachments/assets/ad24121c-b991-4612-b673-e232891f57bd)
-
-
-
+![image](https://github.com/user-attachments/assets/4accbb0e-87e6-440b-9b6c-8453625494be)
 
