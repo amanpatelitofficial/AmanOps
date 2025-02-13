@@ -14,38 +14,29 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1  # Change to your AWS region
-
-      - name: Login to Amazon ECR
-        id: login-ecr
+      - name: Login to Docker Hub
         run: |
-          aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_REPOSITORY }}
+          echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
       - name: Build and Push Docker Image
         env:
-          IMAGE_TAG: latest
+          IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:latest
         run: |
-          IMAGE_URI="${{ secrets.AWS_ECR_REPOSITORY }}:$IMAGE_TAG"
-          docker build -t $IMAGE_URI .
-          docker push $IMAGE_URI
+          docker build -t $IMAGE_NAME .
+          docker push $IMAGE_NAME
 
       - name: Deploy on EC2
         env:
           PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           HOST: ${{ secrets.EC2_HOST }}
           USER: ubuntu
-          IMAGE_URI: ${{ secrets.AWS_ECR_REPOSITORY }}:latest
+          IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:latest
         run: |
           echo "$PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
-          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST << EOF
             sudo docker stop my-app || true
             sudo docker rm my-app || true
-            sudo docker pull $IMAGE_URI
-            sudo docker run -d --name my-app -p 80:80 $IMAGE_URI
+            sudo docker pull $IMAGE_NAME
+            sudo docker run -d --name my-app -p 80:80 $IMAGE_NAME
           EOF
