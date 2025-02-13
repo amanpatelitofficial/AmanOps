@@ -20,7 +20,7 @@ jobs:
 
       - name: Build and Push Docker Image
         env:
-          IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:latest
+          IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/amanops:latest
         run: |
           docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
@@ -30,7 +30,7 @@ jobs:
           PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           HOST: ${{ secrets.EC2_HOST }}
           USER: ubuntu
-          IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/my-app:latest
+          IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/amanops:latest
         run: |
           echo "$PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
