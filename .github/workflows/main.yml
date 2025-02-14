@@ -25,7 +25,13 @@ jobs:
           docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
 
-      - name: Deploy on aws ec2
+      - name: Security Scan with Trivy
+        env:
+          IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/amanops:latest
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --format json -o trivy-report.json $IMAGE_NAME
+
+      - name: Deploy on AWS EC2
         env:
           PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           HOST: ${{ secrets.EC2_HOST }}
@@ -34,6 +40,7 @@ jobs:
         run: |
           echo "$PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
+          scp -o StrictHostKeyChecking=no -i private_key.pem trivy-report.json $USER@$HOST:/home/ubuntu/
           ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST << EOF
             sudo docker stop my-app || true
             sudo docker system prune -af 
