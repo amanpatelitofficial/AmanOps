@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to AWS EC2
+    name: Let's Code & Deploy
     runs-on: ubuntu-latest
 
     steps:
