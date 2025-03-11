@@ -25,7 +25,26 @@ jobs:
           docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
 
-      - name: Deploy on aws ec2
+      - name: Whitelist GitHub Actions Runner IP in AWS Security Group
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          SECURITY_GROUP_ID: ${{ secrets.SECURITY_GROUP_ID }}
+        run: |
+          echo "Fetching GitHub Actions runner IP..."
+          RUNNER_IP=$(curl -s https://checkip.amazonaws.com)
+          echo "GitHub Actions Runner IP: $RUNNER_IP"
+          
+          echo "Allowing access to EC2..."
+          aws ec2 authorize-security-group-ingress \
+            --group-id $SECURITY_GROUP_ID \
+            --protocol tcp \
+            --port 22 \
+            --cidr $RUNNER_IP/32 \
+            --region $AWS_REGION
+
+      - name: Deploy on AWS EC2
         env:
           PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           HOST: ${{ secrets.EC2_HOST }}
@@ -40,3 +59,20 @@ jobs:
             sudo docker pull $IMAGE_NAME
             sudo docker run -d --restart=always --name my-app -p 8080:80 $IMAGE_NAME
           EOF
+
+      - name: Revoke GitHub Actions Runner IP from AWS Security Group
+        if: always()
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          SECURITY_GROUP_ID: ${{ secrets.SECURITY_GROUP_ID }}
+        run: |
+          echo "Removing GitHub Actions runner IP..."
+          RUNNER_IP=$(curl -s https://checkip.amazonaws.com)
+          aws ec2 revoke-security-group-ingress \
+            --group-id $SECURITY_GROUP_ID \
+            --protocol tcp \
+            --port 22 \
+            --cidr $RUNNER_IP/32 \
+            --region $AWS_REGION
