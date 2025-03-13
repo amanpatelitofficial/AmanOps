@@ -29,7 +29,7 @@ jobs:
         env:
           IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/amanops:latest
         run: |
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --format json -o trivy-report.json $IMAGE_NAME
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image $IMAGE_NAME | tee trivy-report.log
 
       - name: Whitelist GitHub Actions Runner IP in AWS Security Group
         env:
