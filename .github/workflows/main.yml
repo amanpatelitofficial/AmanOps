@@ -31,16 +31,6 @@ jobs:
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image --format json -o trivy-report.json $IMAGE_NAME
 
-      - name: Send Trivy Report via Gmail
-        env:
-          GMAIL_USER: ${{ secrets.GMAIL_USER }}
-          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
-          EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
-        run: |
-          sudo apt-get install -y mutt
-          echo "Please find the attached security scan report." | mutt -s "Trivy Security Scan Report" \
-          -a trivy-report.json -- $EMAIL_RECIPIENT
-
       - name: Whitelist GitHub Actions Runner IP in AWS Security Group
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
