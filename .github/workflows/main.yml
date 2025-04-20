@@ -6,12 +6,25 @@ on:
       - main
 
 jobs:
-  deploy:
-    name: Let's Code & Deploy
+  checkout:
+    name: Checkout Repository
     runs-on: ubuntu-latest
-
+    outputs:
+      image_name: ${{ steps.set_image_name.outputs.image_name }}
     steps:
-      - name: Checkout Repository
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set Image Name
+        id: set_image_name
+        run: echo "image_name=${{ secrets.DOCKER_HUB_USERNAME }}/amanops:latest" >> $GITHUB_OUTPUT
+
+  docker:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: checkout
+    steps:
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Login to Docker Hub
@@ -20,29 +33,39 @@ jobs:
 
       - name: Build and Push Docker Image
         env:
-          IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/amanops:latest
+          IMAGE_NAME: ${{ needs.checkout.outputs.image_name }}
         run: |
           docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
 
-      - name: Scan Docker Image with Trivy
+  trivy:
+    name: Scan Image with Trivy
+    runs-on: ubuntu-latest
+    needs: docker
+    steps:
+      - name: Scan Docker Image
         env:
           IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/amanops:latest
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image $IMAGE_NAME | tee trivy-report.log
 
-      - name: Whitelist GitHub Actions Runner IP in AWS Security Group
+  whitelist-ip:
+    name: Whitelist GitHub Actions IP
+    runs-on: ubuntu-latest
+    needs: trivy
+    outputs:
+      runner_ip: ${{ steps.set_ip.outputs.runner_ip }}
+    steps:
+      - name: Fetch and Whitelist GitHub Actions Runner IP
+        id: set_ip
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           SECURITY_GROUP_ID: ${{ secrets.SECURITY_GROUP_ID }}
         run: |
-          echo "Fetching GitHub Actions runner IP..."
           RUNNER_IP=$(curl -s https://checkip.amazonaws.com)
-          echo "GitHub Actions Runner IP: $RUNNER_IP"
-          
-          echo "Allowing access to EC2..."
+          echo "runner_ip=$RUNNER_IP" >> $GITHUB_OUTPUT
           aws ec2 authorize-security-group-ingress \
             --group-id $SECURITY_GROUP_ID \
             --protocol tcp \
@@ -50,7 +73,12 @@ jobs:
             --cidr $RUNNER_IP/32 \
             --region $AWS_REGION
 
-      - name: Deploy on AWS EC2
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: [docker, whitelist-ip]
+    steps:
+      - name: SSH and Deploy Docker Container
         env:
           PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           HOST: ${{ secrets.EC2_HOST }}
@@ -61,21 +89,25 @@ jobs:
           chmod 600 private_key.pem
           ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST << EOF
             sudo docker stop my-app || true
-            sudo docker system prune -af 
+            sudo docker system prune -af
             sudo docker pull $IMAGE_NAME
             sudo docker run -d --restart=always --name my-app -p 8080:80 $IMAGE_NAME
           EOF
 
-      - name: Revoke GitHub Actions Runner IP from AWS Security Group
-        if: always()
+  revoke-ip:
+    name: Revoke GitHub Actions IP
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [whitelist-ip, deploy]
+    steps:
+      - name: Remove GitHub Actions Runner IP from Security Group
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           SECURITY_GROUP_ID: ${{ secrets.SECURITY_GROUP_ID }}
+          RUNNER_IP: ${{ needs.whitelist-ip.outputs.runner_ip }}
         run: |
-          echo "Removing GitHub Actions runner IP..."
-          RUNNER_IP=$(curl -s https://checkip.amazonaws.com)
           aws ec2 revoke-security-group-ingress \
             --group-id $SECURITY_GROUP_ID \
             --protocol tcp \
