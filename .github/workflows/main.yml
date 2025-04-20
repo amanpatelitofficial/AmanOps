@@ -7,16 +7,16 @@ on:
 
 jobs:
   checkout:
-    name: Checkout Repository
+    name: Checkout Code
     runs-on: ubuntu-latest
     outputs:
-      image_name: ${{ steps.set_image_name.outputs.image_name }}
+      image_name: ${{ steps.set_image.outputs.image_name }}
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set Image Name
-        id: set_image_name
+        id: set_image
         run: echo "image_name=${{ secrets.DOCKER_HUB_USERNAME }}/amanops:latest" >> $GITHUB_OUTPUT
 
   docker:
@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: checkout
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Login to Docker Hub
@@ -33,12 +33,12 @@ jobs:
 
       - name: Build and Push Docker Image
         env:
-          IMAGE_NAME: ${{ needs.checkout.outputs.image_name }}
+          IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/amanops:latest
         run: |
           docker build -t $IMAGE_NAME .
           docker push $IMAGE_NAME
 
-  trivy:
+  scan:
     name: Scan Image with Trivy
     runs-on: ubuntu-latest
     needs: docker
@@ -49,15 +49,15 @@ jobs:
         run: |
           docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image $IMAGE_NAME | tee trivy-report.log
 
-  whitelist-ip:
+  whitelist:
     name: Whitelist GitHub Actions IP
     runs-on: ubuntu-latest
-    needs: trivy
+    needs: scan
     outputs:
-      runner_ip: ${{ steps.set_ip.outputs.runner_ip }}
+      runner_ip: ${{ steps.get_ip.outputs.runner_ip }}
     steps:
-      - name: Fetch and Whitelist GitHub Actions Runner IP
-        id: set_ip
+      - name: Whitelist IP in AWS Security Group
+        id: get_ip
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -76,9 +76,9 @@ jobs:
   deploy:
     name: Deploy to EC2
     runs-on: ubuntu-latest
-    needs: [docker, whitelist-ip]
+    needs: whitelist
     steps:
-      - name: SSH and Deploy Docker Container
+      - name: SSH and Deploy to EC2
         env:
           PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           HOST: ${{ secrets.EC2_HOST }}
@@ -94,19 +94,19 @@ jobs:
             sudo docker run -d --restart=always --name my-app -p 8080:80 $IMAGE_NAME
           EOF
 
-  revoke-ip:
+  revoke:
     name: Revoke GitHub Actions IP
     runs-on: ubuntu-latest
     if: always()
-    needs: [whitelist-ip, deploy]
+    needs: [deploy, whitelist]
     steps:
-      - name: Remove GitHub Actions Runner IP from Security Group
+      - name: Remove Runner IP from Security Group
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           SECURITY_GROUP_ID: ${{ secrets.SECURITY_GROUP_ID }}
-          RUNNER_IP: ${{ needs.whitelist-ip.outputs.runner_ip }}
+          RUNNER_IP: ${{ needs.whitelist.outputs.runner_ip }}
         run: |
           aws ec2 revoke-security-group-ingress \
             --group-id $SECURITY_GROUP_ID \
