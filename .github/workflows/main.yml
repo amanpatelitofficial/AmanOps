@@ -87,12 +87,22 @@ jobs:
         run: |
           echo "$PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
-          ssh -tt -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST << EOF
+
+          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST "
+            set -e
+            echo 'Stopping existing container...'
             sudo docker stop my-app || true
+
+            echo 'Pruning system...'
             sudo docker system prune -af
+
+            echo 'Pulling new image: $IMAGE_NAME'
             sudo docker pull $IMAGE_NAME
+
+            echo 'Starting new container...'
             sudo docker run -d --restart=always --name my-app -p 8080:80 $IMAGE_NAME
-          EOF
+          "
+
           rm -f private_key.pem
 
   revoke:
