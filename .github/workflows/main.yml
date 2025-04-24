@@ -73,12 +73,6 @@ jobs:
             --cidr $RUNNER_IP/32 \
             --region $AWS_REGION
 
-- name: Debug SSH Connection
-  run: |
-    echo "$PRIVATE_KEY" > private_key.pem
-    chmod 600 private_key.pem
-    ssh -vvv -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST exit
-
   deploy:
     name: Deploy to EC2
     runs-on: ubuntu-latest
