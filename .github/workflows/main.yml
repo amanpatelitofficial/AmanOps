@@ -98,7 +98,7 @@ jobs:
           rm -f private_key.pem
 
   revoke:
-    name: Revoke GitHub Actions IP
+    name: Revoke GitHub Actions Public IP
     runs-on: ubuntu-latest
     if: always()
     needs: [deploy, whitelist]
