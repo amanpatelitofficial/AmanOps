@@ -28,15 +28,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Login to Docker Hub
-        run: |
-          echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+        run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
 
       - name: Build and Push Docker Image
-        env:
-          IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/amanops:latest
         run: |
-          docker build -t $IMAGE_NAME .
-          docker push $IMAGE_NAME
+          IMAGE_NAME="${{ needs.checkout.outputs.image_name }}"
+          docker build -t "$IMAGE_NAME" .
+          docker push "$IMAGE_NAME"
 
   scan:
     name: Scan Image with Trivy
@@ -44,10 +42,9 @@ jobs:
     needs: docker
     steps:
       - name: Scan Docker Image
-        env:
-          IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/amanops:latest
         run: |
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image $IMAGE_NAME | tee trivy-report.log
+          IMAGE_NAME="${{ needs.checkout.outputs.image_name }}"
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image "$IMAGE_NAME" --format table | tee trivy-report.log
 
   whitelist:
     name: Whitelist GitHub Actions IP
@@ -67,11 +64,11 @@ jobs:
           RUNNER_IP=$(curl -s https://checkip.amazonaws.com)
           echo "runner_ip=$RUNNER_IP" >> $GITHUB_OUTPUT
           aws ec2 authorize-security-group-ingress \
-            --group-id $SECURITY_GROUP_ID \
+            --group-id "$SECURITY_GROUP_ID" \
             --protocol tcp \
             --port 22 \
-            --cidr $RUNNER_IP/32 \
-            --region $AWS_REGION
+            --cidr "$RUNNER_IP/32" \
+            --region "$AWS_REGION"
 
   deploy:
     name: Deploy to EC2
@@ -83,15 +80,15 @@ jobs:
           PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           HOST: ${{ secrets.EC2_HOST }}
           USER: ubuntu
-          IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/amanops:latest
         run: |
           echo "$PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
-          ssh -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST << EOF
+          IMAGE_NAME="${{ needs.checkout.outputs.image_name }}"
+          ssh -o StrictHostKeyChecking=no -i private_key.pem "$USER@$HOST" << EOF
             sudo docker stop my-app || true
             sudo docker system prune -af
-            sudo docker pull $IMAGE_NAME
-            sudo docker run -d --restart=always --name my-app -p 8080:80 $IMAGE_NAME
+            sudo docker pull "$IMAGE_NAME"
+            sudo docker run -d --restart=always --name my-app -p 8080:80 "$IMAGE_NAME"
           EOF
 
   revoke:
@@ -109,8 +106,8 @@ jobs:
           RUNNER_IP: ${{ needs.whitelist.outputs.runner_ip }}
         run: |
           aws ec2 revoke-security-group-ingress \
-            --group-id $SECURITY_GROUP_ID \
+            --group-id "$SECURITY_GROUP_ID" \
             --protocol tcp \
             --port 22 \
-            --cidr $RUNNER_IP/32 \
-            --region $AWS_REGION
+            --cidr "$RUNNER_IP/32" \
+            --region "$AWS_REGION"
