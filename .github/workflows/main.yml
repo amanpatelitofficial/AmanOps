@@ -88,7 +88,6 @@ jobs:
           echo "$PRIVATE_KEY" > private_key.pem
           chmod 600 private_key.pem
           ssh -tt -o StrictHostKeyChecking=no -i private_key.pem $USER@$HOST << EOF
-            set -x
             sudo docker stop my-app || true
             sudo docker system prune -af
             sudo docker pull $IMAGE_NAME
