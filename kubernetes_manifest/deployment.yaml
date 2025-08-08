@@ -5,7 +5,7 @@ metadata:
   labels:
     app: web-app
 spec:
-  replicas: 2  
+  replicas: 2
   selector:
     matchLabels:
       app: web-app
@@ -30,6 +30,7 @@ spec:
     app: web-app
   ports:
   - protocol: TCP
-    port: 80
-    targetPort: 80
-  type: NodePort  # You can change to NodePort or LoadBalancer as needed
+    port: 80        # Cluster-facing port
+    targetPort: 80  # Container port
+    nodePort: 30080 # Optional: fixed port on the node, else Kubernetes assigns one in the range 30000-32767
+  type: NodePort     # Expose service externally via <NodeIP>:<NodePort>
