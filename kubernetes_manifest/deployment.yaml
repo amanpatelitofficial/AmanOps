@@ -30,7 +30,33 @@ spec:
     app: web-app
   ports:
   - protocol: TCP
-    port: 80        # Cluster-facing port
-    targetPort: 80  # Container port
-    nodePort: 30080 # Optional: fixed port on the node, else Kubernetes assigns one in the range 30000-32767
-  type: NodePort     # Expose service externally via <NodeIP>:<NodePort>
+    port: 80
+    targetPort: 80
+  type: NodePort
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web-app-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:123456789012:certificate/your-certificate-id
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/healthcheck-path: /
+    alb.ingress.kubernetes.io/healthcheck-port: "80"
+spec:
+  rules:
+  - host: webapp.example.com   # Replace with your domain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: web-app-svc
+            port:
+              number: 80
